@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Gegenereerde output (opnieuw te maken met build_graph.py / analyse_thesaurus.py)
+graph.graphml
+graph_projectie.graphml
+graph_topics.graphml
+graph-viewer.html
+analyse_thesaurus.json
+
+# Geharvestte XML-cache (opnieuw ophalen: py build_graph.py --limit 0)
+bronze_xml/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
