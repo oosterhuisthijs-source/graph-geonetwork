@@ -1,7 +1,7 @@
 # PZH metadata — kennisgraaf
 
 Tooling om metadata van de Provincie Zuid-Holland op te halen, te analyseren en als interactieve graph te visualiseren.
-
+![Screenshot van de interactieve graph](docs/screenshot.png)
 ## Achtergrond
 
 ### Wat is metadata en waarom een graph?
