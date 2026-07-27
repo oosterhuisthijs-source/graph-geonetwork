@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PZH metadata — kennisgraaf</title>
+<style>
+  :root { --bg:#12121c; --fg:#d5d5e0; --muted:#8a8a9c; --panel:#1c1c2b; --border:#2c2c40;
+          --dataset:#5b8cff; --topic:#ff7cc3; --trefwoord:#3fbf9f; }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);
+    font:14px/1.45 -apple-system,Segoe UI,Roboto,sans-serif;overflow:hidden}
+  #graph{position:fixed;inset:0}
+  /* toolbar */
+  #bar{position:fixed;top:12px;left:12px;z-index:10;display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+    background:#1c1c2bcc;backdrop-filter:blur(8px);padding:8px 10px;border:1px solid var(--border);border-radius:10px}
+  #bar input[type=text]{background:#0e0e18;border:1px solid var(--border);color:var(--fg);border-radius:6px;padding:5px 8px;width:180px}
+  #bar button{background:#26263a;border:1px solid var(--border);color:var(--fg);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:12px}
+  #bar button:hover{border-color:var(--dataset)}
+  #bar button.active{border-color:var(--dataset);background:#1a2240;color:#a0b8ff}
+  .chip{display:inline-flex;gap:6px;align-items:center;cursor:pointer;user-select:none;
+    padding:4px 9px;border:1px solid var(--border);border-radius:20px;font-size:12px}
+  .chip .dot{width:10px;height:10px;border-radius:50%}
+  .chip.off{opacity:.4}
+  #count{color:var(--muted);font-size:12px;margin-left:2px}
+  .sep{width:1px;height:20px;background:var(--border);flex-shrink:0;margin:0 2px}
+  /* detail panel */
+  #panel{position:fixed;top:0;right:0;height:100%;width:360px;max-width:85vw;z-index:11;
+    background:var(--panel);border-left:1px solid var(--border);padding:20px;overflow-y:auto;
+    transform:translateX(100%);transition:transform .25s ease}
+  #panel.open{transform:none}
+  #panel h2{margin:0 20px 4px 0;font-size:17px;line-height:1.3}
+  #panel .type{display:inline-block;font-size:11px;text-transform:uppercase;letter-spacing:.5px;
+    padding:2px 8px;border-radius:12px;margin-bottom:12px}
+  #panel .meta{color:var(--muted);font-size:12px;margin-bottom:14px}
+  #panel .sam{white-space:pre-wrap;font-size:13px;color:#c2c2d2}
+  #panel .close{position:absolute;top:14px;right:16px;cursor:pointer;color:var(--muted);font-size:20px;border:none;background:none}
+  #panel .links{margin-top:16px;font-size:12px;color:var(--muted)}
+  #panel .portals{margin-top:10px;margin-bottom:16px;display:flex;flex-direction:column;gap:8px}
+  #panel .portals a{display:flex;align-items:center;gap:10px;padding:11px 14px;
+    border:1px solid var(--border);border-radius:8px;color:var(--fg);text-decoration:none;
+    font-size:13px;font-weight:500;background:#16162299;transition:border-color .15s,background .15s}
+  #panel .portals a:hover{border-color:var(--dataset);background:#1e1e33}
+  #panel .portals a .icon{font-size:16px;flex-shrink:0}
+  #panel .portals a .pname{flex:1}
+  #panel .portals a .arrow{color:var(--muted);font-size:12px}
+  #hint{position:fixed;bottom:12px;left:12px;z-index:10;color:#666;font-size:12px}
+  /* legenda */
+  #legenda{position:fixed;bottom:32px;left:12px;z-index:10;display:flex;flex-direction:column;gap:5px;
+    background:#1c1c2bcc;backdrop-filter:blur(8px);padding:8px 12px;border:1px solid var(--border);border-radius:8px}
+  #legenda .leg-item{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+  #legenda canvas{display:block}
+  /* search dropdown */
+  #search-wrap{position:relative}
+  #search-results{position:absolute;top:100%;left:0;min-width:240px;background:#1c1c2b;
+    border:1px solid var(--border);border-radius:8px;margin-top:4px;z-index:20;
+    max-height:280px;overflow-y:auto;display:none;box-shadow:0 4px 16px #00000066}
+  #search-results.open{display:block}
+  #search-results .sr-item{padding:8px 10px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:8px}
+  #search-results .sr-item:hover{background:#26263a}
+  #search-results .sr-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  #search-results .sr-label{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #search-results .sr-type{font-size:11px;color:var(--muted);flex-shrink:0}
+  /* klikbare burenlijst */
+  #panel .links{margin-top:16px}
+  #panel .nbr-section{margin-bottom:10px}
+  #panel .nbr-head{font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;font-weight:600}
+  #panel .nbr-chips{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:2px}
+  #panel .nbr-chip{font-size:12px;padding:3px 9px;border-radius:12px;border:1px solid var(--border);
+    cursor:pointer;color:var(--fg);background:#16162299;transition:border-color .12s,background .12s;
+    max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #panel .nbr-chip:hover{background:#26263a}
+  #panel .nbr-more{font-size:12px;color:var(--muted);cursor:pointer;padding:2px 6px;
+    border:none;background:none;border-radius:10px}
+  #panel .nbr-more:hover{color:var(--fg);background:#26263a}
+</style>
+</head>
+<body>
+<div id="bar">
+  <div id="search-wrap">
+    <input id="search" type="text" placeholder="zoek dataset / topic / trefwoord…">
+    <div id="search-results"></div>
+  </div>
+  <span class="chip" data-type="dataset"><span class="dot" style="background:var(--dataset)"></span>datasets</span>
+  <span class="chip" data-type="topic"><span class="dot" style="background:var(--topic)"></span>topics</span>
+  <span class="chip" data-type="trefwoord"><span class="dot" style="background:var(--trefwoord)"></span>trefwoorden</span>
+  <span class="sep"></span>
+  <button id="hier-topic" class="active" title="Topics als hub: datasets clusteren rondom topics">Topics centraal</button>
+  <button id="hier-tref" title="Trefwoorden als hub: datasets clusteren rondom trefwoorden">Trefwoorden centraal</button>
+  <button id="hier-vrij" title="Vrije layout: gelijke kracht voor alle knoopsoorten">Vrij</button>
+  <span class="sep"></span>
+  <button id="reset">Fit</button>
+  <span id="count"></span>
+</div>
+
+<div id="panel">
+  <button class="close" id="closePanel">×</button>
+  <span class="type" id="pType"></span>
+  <h2 id="pTitle"></h2>
+  <div class="meta" id="pMeta"></div>
+  <div class="portals" id="pPortals"></div>
+  <div class="sam" id="pSam"></div>
+  <div class="links" id="pLinks"></div>
+</div>
+
+<div id="graph"></div>
+<div id="hint">Klik = detail · sleep = vastzetten · scroll = zoom · dubbelklik achtergrond = fit</div>
+
+<script>/*__LIB__*/</script>
+<script>
+/*__DATA__*/
+
+const COLOR = { dataset:'#5b8cff', topic:'#ff7cc3', trefwoord:'#3fbf9f' };
+const BG = '#12121c';
+const hidden = new Set();
+const el = document.getElementById('graph');
+
+// adjacency voor buren-highlight
+const adj = new Map();
+GRAPH.nodes.forEach(n => adj.set(n.id, new Set()));
+GRAPH.links.forEach(l => { adj.get(l.source)?.add(l.target); adj.get(l.target)?.add(l.source); });
+const nodeById = new Map(GRAPH.nodes.map(n => [n.id, n]));
+
+let highlight = new Set(), highlightLinks = new Set(), selected = null;
+let hierMode = 'topic'; // bijhouden welk type altijd labels toont
+
+// ---- knoopgrootte ----
+function vr(n) {
+  // visuele straal in grafiek-coördinaten
+  if (n.type === 'topic')     return 9;
+  if (n.type === 'trefwoord') return Math.max(4, 1.5 + Math.sqrt(n.deg) * 0.6);
+  return Math.max(3, 1 + Math.sqrt(n.deg) * 0.35);
+}
+
+// ---- vormen tekenen ----
+function drawHexagon(ctx, x, y, r) {
+  ctx.beginPath();
+  for (let i = 0; i < 6; i++) {
+    const a = (i * Math.PI) / 3 - Math.PI / 6;
+    i === 0 ? ctx.moveTo(x + r * Math.cos(a), y + r * Math.sin(a))
+             : ctx.lineTo(x + r * Math.cos(a), y + r * Math.sin(a));
+  }
+  ctx.closePath();
+}
+
+function drawDiamond(ctx, x, y, r) {
+  ctx.beginPath();
+  ctx.moveTo(x,       y - r);
+  ctx.lineTo(x + r * 0.75, y);
+  ctx.lineTo(x,       y + r);
+  ctx.lineTo(x - r * 0.75, y);
+  ctx.closePath();
+}
+
+function drawLabel(ctx, n, r, scale, dim) {
+  const fs = n.type === 'topic' ? Math.max(11 / scale, 2.5) : Math.max(9 / scale, 2);
+  ctx.font = `${n.type === 'topic' ? 'bold ' : ''}${fs}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  const t = n.label.length > 42 ? n.label.slice(0, 42) + '…' : n.label;
+  const ypos = n.y + r + 2 / scale;
+  // halo zodat tekst leesbaar blijft over andere knopen heen
+  ctx.strokeStyle = BG;
+  ctx.lineWidth = Math.max(3 / scale, 0.6);
+  ctx.strokeText(t, n.x, ypos);
+  ctx.fillStyle = dim ? '#44445a' : (n.type === 'topic' ? '#ffe0f0' : '#d8d8e8');
+  ctx.fillText(t, n.x, ypos);
+}
+
+const Graph = ForceGraph()(el)
+  .backgroundColor(BG)
+  .graphData(GRAPH)
+  .nodeVal(n => n.type === 'topic' ? 60 : n.type === 'trefwoord' ? Math.max(8, n.deg * 1.2) : Math.max(4, n.deg * 0.5))
+  .nodeLabel(n => `${n.label} · ${n.type}`)
+  .linkColor(l => highlightLinks.has(l) ? '#6a6a9c' : '#26263a')
+  .linkWidth(l => highlightLinks.has(l) ? 1.6 : 0.5)
+  .nodeCanvasObjectMode(() => 'replace')
+  .nodeCanvasObject((n, ctx, scale) => {
+    const base  = COLOR[n.type] || '#888';
+    const dim   = highlight.size && !highlight.has(n.id);
+    const active = selected === n;
+    const fill  = dim ? '#272738' : base;
+    const r     = vr(n);
+
+    if (n.type === 'topic') {
+      // zeshoek — altijd zichtbaar als anchor
+      drawHexagon(ctx, n.x, n.y, r);
+      ctx.fillStyle = fill;
+      ctx.fill();
+      ctx.strokeStyle = active ? '#ffffff' : (dim ? '#33334a' : '#ffffff55');
+      ctx.lineWidth = active ? 2.5 / scale : 1.5 / scale;
+      ctx.stroke();
+    } else if (n.type === 'trefwoord') {
+      // diamant
+      drawDiamond(ctx, n.x, n.y, r);
+      ctx.fillStyle = fill;
+      ctx.fill();
+      if (active) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5 / scale; ctx.stroke(); }
+    } else {
+      // dataset: cirkel
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, r, 0, 2 * Math.PI);
+      ctx.fillStyle = fill;
+      ctx.fill();
+      if (active) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5 / scale; ctx.stroke(); }
+    }
+
+    // label: altijd bij het hub-type van de actieve hiërarchiemodus
+    const hubType = hierMode === 'tref' ? 'trefwoord' : hierMode === 'vrij' ? null : 'topic';
+    const showLabel = n.type === hubType || highlight.has(n.id) || scale >= 2;
+    if (showLabel) drawLabel(ctx, n, r, scale, dim);
+  })
+  .onNodeHover(n => { if (!selected) setHighlight(n); el.style.cursor = n ? 'pointer' : ''; })
+  .onNodeClick(n => { selected = n; setHighlight(n); openPanel(n);
+    Graph.centerAt(n.x, n.y, 500); Graph.zoom(Math.max(Graph.zoom(), 2.5), 500); })
+  .onBackgroundClick(() => { selected = null; setHighlight(null); closePanel(); })
+  .onNodeDragEnd(n => { n.fx = n.x; n.fy = n.y; })
+  .cooldownTicks(200);
+
+// ---- forces ----
+function setHierarchy(mode) {
+  hierMode = mode;
+  document.querySelectorAll('#hier-topic,#hier-tref,#hier-vrij')
+    .forEach(b => b.classList.remove('active'));
+  document.getElementById('hier-' + mode).classList.add('active');
+
+  if (mode === 'topic') {
+    Graph.d3Force('charge').strength(n =>
+      n.type === 'topic' ? -350 : n.type === 'trefwoord' ? -25 : -18);
+    Graph.d3Force('link').distance(() => 45);
+  } else if (mode === 'tref') {
+    Graph.d3Force('charge').strength(n =>
+      n.type === 'trefwoord' ? -280 : n.type === 'topic' ? -40 : -15);
+    Graph.d3Force('link').distance(() => 40);
+  } else {
+    Graph.d3Force('charge').strength(-50);
+    Graph.d3Force('link').distance(() => 30);
+  }
+  Graph.d3ReheatSimulation();
+}
+
+setHierarchy('topic');
+
+document.getElementById('hier-topic').onclick = () => setHierarchy('topic');
+document.getElementById('hier-tref').onclick  = () => setHierarchy('tref');
+document.getElementById('hier-vrij').onclick  = () => setHierarchy('vrij');
+
+function visible(){
+  const nodes = GRAPH.nodes.filter(n => !hidden.has(n.type));
+  const ok = new Set(nodes.map(n => n.id));
+  const links = GRAPH.links.filter(l =>
+    ok.has(l.source.id ?? l.source) && ok.has(l.target.id ?? l.target));
+  return { nodes, links };
+}
+function refresh(){ Graph.graphData(visible()); updateCount(); }
+function updateCount(){
+  const d = Graph.graphData();
+  document.getElementById('count').textContent = `${d.nodes.length} nodes · ${d.links.length} edges`;
+}
+
+function setHighlight(n){
+  highlight = new Set(); highlightLinks = new Set();
+  if (n){
+    highlight.add(n.id); (adj.get(n.id)||[]).forEach(id => highlight.add(id));
+    Graph.graphData().links.forEach(l => {
+      const s = l.source.id ?? l.source, t = l.target.id ?? l.target;
+      if (s === n.id || t === n.id) highlightLinks.add(l);
+    });
+  }
+  Graph.nodeColor(nd => {
+    const base = COLOR[nd.type] || '#888';
+    if (!highlight.size) return base;
+    return highlight.has(nd.id) ? (nd === selected ? '#ffffff' : base) : '#272738';
+  });
+}
+
+// ---- navigatie ----
+function navigateTo(id){
+  const n = nodeById.get(id); if (!n) return;
+  selected = n; setHighlight(n); openPanel(n);
+  Graph.centerAt(n.x, n.y, 500); Graph.zoom(Math.max(Graph.zoom(), 2.5), 500);
+}
+
+// ---- detail panel ----
+const panel = document.getElementById('panel');
+function openPanel(n){
+  document.getElementById('pTitle').textContent = n.label;
+  const typ = document.getElementById('pType');
+  typ.textContent = n.type; typ.style.background = (COLOR[n.type]||'#888')+'33';
+  typ.style.color = COLOR[n.type] || '#aaa';
+  document.getElementById('pMeta').textContent =
+    (n.gew ? 'Gewijzigd: '+n.gew+' · ' : '') + `${n.deg} verbindingen`;
+  const portals = document.getElementById('pPortals');
+  portals.innerHTML = '';
+  [
+    { url: n.url_opendata, icon: '📂', naam: 'Opendata Zuid-Holland' },
+  ].forEach(p => {
+    if (!p.url) return;
+    const a = document.createElement('a');
+    a.href = p.url; a.target = '_blank';
+    a.innerHTML = `<span class="icon">${p.icon}</span><span class="pname">${p.naam}</span><span class="arrow">↗</span>`;
+    portals.appendChild(a);
+  });
+  document.getElementById('pSam').textContent = n.sam || '';
+  const nbrs = [...(adj.get(n.id)||[])].map(id => nodeById.get(id)).filter(Boolean);
+  const grp = {};
+  nbrs.forEach(x => (grp[x.type] ??= []).push(x));
+  const linksEl = document.getElementById('pLinks');
+  linksEl.innerHTML = '';
+  const MAX_CHIPS = 8;
+  Object.entries(grp).forEach(([type, items]) => {
+    const sec = document.createElement('div'); sec.className = 'nbr-section';
+    const head = document.createElement('div'); head.className = 'nbr-head';
+    head.style.color = COLOR[type] || '#aaa';
+    head.textContent = `${type} (${items.length})`;
+    sec.appendChild(head);
+    const chips = document.createElement('div'); chips.className = 'nbr-chips';
+    const vis = items.slice(0, MAX_CHIPS), rest = items.slice(MAX_CHIPS);
+    vis.forEach(nbr => {
+      const c = document.createElement('span'); c.className = 'nbr-chip';
+      c.style.borderColor = (COLOR[type]||'#888')+'66';
+      c.textContent = nbr.label; c.title = nbr.label;
+      c.onclick = () => navigateTo(nbr.id);
+      chips.appendChild(c);
+    });
+    sec.appendChild(chips);
+    if (rest.length){
+      const more = document.createElement('button'); more.className = 'nbr-more';
+      more.textContent = `+ ${rest.length} meer`;
+      more.onclick = () => {
+        rest.forEach(nbr => {
+          const c = document.createElement('span'); c.className = 'nbr-chip';
+          c.style.borderColor = (COLOR[type]||'#888')+'66';
+          c.textContent = nbr.label; c.title = nbr.label;
+          c.onclick = () => navigateTo(nbr.id);
+          chips.appendChild(c);
+        });
+        more.remove();
+      };
+      sec.appendChild(more);
+    }
+    linksEl.appendChild(sec);
+  });
+  panel.classList.add('open');
+}
+function closePanel(){ panel.classList.remove('open'); }
+document.getElementById('closePanel').onclick = () => { closePanel(); selected=null; setHighlight(null); };
+
+// ---- type-filter chips ----
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.onclick = () => {
+    const t = chip.dataset.type;
+    if (hidden.has(t)){ hidden.delete(t); chip.classList.remove('off'); }
+    else { hidden.add(t); chip.classList.add('off'); }
+    refresh();
+  };
+});
+
+// ---- zoek met dropdown ----
+const searchEl  = document.getElementById('search');
+const resultsEl = document.getElementById('search-results');
+const MAX_RESULTS = 12;
+
+function closeSearch(){ resultsEl.classList.remove('open'); resultsEl.innerHTML = ''; }
+
+searchEl.addEventListener('input', e => {
+  const q = e.target.value.trim().toLowerCase();
+  closeSearch(); if (!q) return;
+  const hits = Graph.graphData().nodes
+    .filter(n => n.label.toLowerCase().includes(q))
+    .slice(0, MAX_RESULTS);
+  if (!hits.length) return;
+  hits.forEach(hit => {
+    const item = document.createElement('div'); item.className = 'sr-item';
+    const dot  = document.createElement('span'); dot.className = 'sr-dot';
+    dot.style.background = COLOR[hit.type] || '#888';
+    const lbl  = document.createElement('span'); lbl.className = 'sr-label'; lbl.textContent = hit.label;
+    const typ  = document.createElement('span'); typ.className = 'sr-type';  typ.textContent = hit.type;
+    item.append(dot, lbl, typ);
+    item.onclick = () => { searchEl.value = hit.label; closeSearch(); navigateTo(hit.id); };
+    resultsEl.appendChild(item);
+  });
+  resultsEl.classList.add('open');
+});
+searchEl.addEventListener('keydown', e => { if (e.key === 'Escape'){ closeSearch(); searchEl.blur(); } });
+document.addEventListener('click', e => { if (!e.target.closest('#search-wrap')) closeSearch(); });
+
+document.getElementById('reset').onclick = () => Graph.zoomToFit(500, 60);
+el.addEventListener('dblclick', e => { if (e.target.tagName==='CANVAS') Graph.zoomToFit(500,60); });
+
+addEventListener('resize', () => Graph.width(innerWidth).height(innerHeight));
+Graph.width(innerWidth).height(innerHeight);
+updateCount();
+setTimeout(() => Graph.zoomToFit(600, 60), 800);
+</script>
+</body>
+</html>
