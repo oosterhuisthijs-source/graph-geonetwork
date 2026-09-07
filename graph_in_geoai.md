@@ -192,6 +192,8 @@ What this repo does
   # Resources
   - search academic papers for "knowledge graph" "Geospatial data" "Linked data" "LLM" "RAG"
   - search github for repos
+    - gnn rag: https://github.com/cmavro/GNN-RAG
+      - Question: how do apply GNN rag in practice into our framework? GraftNet, NSM, ReaRev, pretrained LMs, such as SBERT LMsr
   - search "Spatial-RAG" on arXiv, "GeoGraphRAG" on ScienceDirect, "GeoAgentic-RAG" also on ScienceDirect, and "GraphRAG" from Microsoft on GitHub
   - https://github.com/microsoft/graphrag
   - https://github.com/johnymontana/geospatial-graph-demos
@@ -202,3 +204,10 @@ What this repo does
   - A_question-answering_framework_for_geospatial_data.pdf
   - https://www.mdpi.com/2071-1050/13/19/10602
   - https://eprints.whiterose.ac.uk/id/eprint/231968/1/Geospatial%20Knowledge%20Graphs.pdf
+  - https://github.com/FabioYanezRomero/Knowledge-Graph-Builder
+  - overturemaps knowledge graphs https://overturemaps.org/blog/2026/from-concept-to-prototype-grounding-ai-llms-with-overtures-cross-theme-knowledge-graph/
+  - overture maps spatial graph rag: https://wherobots.com/blog/spatial-graph-rag/
+  - Turn any codebase, with its docs, SQL schemas, configs, and PDFs, into a queryable knowledge graph https://github.com/Graphify-Labs/graphify
+  - Open LLM Knowledge Base https://github.com/VectifyAI/OpenKB
+  - Transform unstructured text into structured knowledge with LLMs. Graphs, hypergraphs, and spatio-temporal extractions https://github.com/yifanfeng97/Hyper-Extract
+  - robert-mcdermott/ai-knowledge-graph: AI Powered Knowledge Graph Generator: https://github.com/robert-mcdermott/ai-knowledge-graph
